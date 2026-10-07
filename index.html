@@ -1,0 +1,182 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827"><title>Mon Programme</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#111827;color:white;padding:22px 18px 18px;border-radius:0 0 24px 24px}.container{max-width:720px;margin:auto;padding:14px 14px 88px}
+h1{font-size:24px;margin:3px 0}.muted{color:#6b7280;font-size:13px}.card{background:white;border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px #0000000a}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:#f8fafc;padding:13px;border-radius:14px}.big{font-size:22px;font-weight:750;margin-top:3px}
+button{border:0;border-radius:13px;padding:12px 15px;font-size:15px;font-weight:700;background:#111827;color:white}.secondary{background:#e5e7eb;color:#111827}.full{width:100%;margin-top:10px}
+.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.tabs button{white-space:nowrap}.tabs button.active{background:#374151}
+.meal{padding:11px 0;border-bottom:1px solid #eee}.meal:last-child{border:0}.meal b{display:block;margin-bottom:3px}
+.ex{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid #eee}
+input,select{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:11px;font-size:16px}
+input[type=checkbox]{width:22px;height:22px}.row{display:flex;gap:8px}.row>*{flex:1}
+canvas{width:100%;height:190px;background:#f8fafc;border-radius:14px}.pill{display:inline-block;background:#eef2ff;padding:5px 9px;border-radius:99px;font-size:12px}
+.hidden{display:none}nav{position:fixed;bottom:0;left:0;right:0;background:#ffffffee;backdrop-filter:blur(12px);border-top:1px solid #ddd;padding:9px;display:flex;gap:7px;z-index:5}nav button{flex:1;padding:10px;font-size:13px}
+.note{min-height:70px;resize:vertical}.success{color:#15803d;font-weight:700}
+</style><link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mon Programme">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+}
+</script></head><body>
+<header><div class="muted" style="color:#cbd5e1">MON CARNET DE BORD</div><h1>Programme 30 jours</h1><div id="head"></div></header>
+<main class="container">
+<div class="tabs"><button id="b1" onclick="view('home')">🏠 Accueil</button><button id="b2" onclick="view('day')">📅 Journée</button><button id="b3" onclick="view('progress')">📈 Progression</button></div>
+
+<section id="home"><div class="card"><h2>Aujourd’hui</h2><div class="grid">
+<div class="stat"><div class="muted">Jour</div><div class="big" id="day"></div></div>
+<div class="stat"><div class="muted">Poids</div><div class="big" id="weight"></div></div>
+</div><button class="full" onclick="view('day')">Ouvrir ma journée</button></div>
+<div class="card"><h2>Objectifs</h2><div class="grid"><div class="stat"><div class="muted">Départ</div><div class="big">91 kg</div></div><div class="stat"><div class="muted">Cible</div><div class="big">87 kg</div></div></div></div>
+<div class="card"><h2>Régularité</h2><p><b id="done"></b> séances terminées.</p><p class="muted">5 séances de 20 min par semaine · samedi et dimanche repos.</p></div></section>
+
+<section id="dayview" class="hidden">
+<div class="card"><div class="pill" id="daypill"></div><h2 id="title"></h2><p class="muted" id="session"></p></div>
+<div class="card"><h2>🍽️ Repas</h2><div id="meals"></div></div>
+<div class="card"><h2>🏋️ Séance</h2><p class="muted">Pour chaque exercice avec élastique, indique le niveau utilisé : 10 · 20 · 30 · 40 · 50 kg. On suivra ensuite ta progression.</p><div id="exercises"></div><div class="row" style="margin-top:12px"><select id="difficulty"><option value="">Difficulté</option><option>1 — Très facile</option><option>2 — Facile</option><option>3 — Modérée</option><option>4 — Difficile</option><option>5 — Très difficile</option></select><input id="minutes" type="number" placeholder="min"></div><textarea id="comment" class="note" placeholder="Commentaire sur la séance…" style="width:100%;margin-top:8px"></textarea><button class="full" onclick="finish()">✓ Enregistrer la séance</button><button class="full secondary" onclick="nextDay()">Passer au jour suivant →</button></div>
+<div class="card"><h2>🍽️ Réellement consommé</h2>
+<p class="muted">Facultatif : note tes calories et protéines réellement consommées aujourd’hui.</p>
+<div class="row"><input id="dayKcal" type="number" placeholder="kcal"><input id="dayProt" type="number" placeholder="protéines (g)"></div>
+<button class="full" onclick="saveDayNutrition()">Enregistrer</button></div>
+<div class="card"><h2>⚖️ Mes mesures</h2><div class="row"><input id="w" type="number" step=".1" placeholder="Poids (kg)"><input id="waist" type="number" step=".1" placeholder="Tour taille (cm)"></div><button class="full" onclick="saveMeasures()">Enregistrer les mesures</button></div>
+</section>
+
+<section id="progress" class="hidden"><div class="card"><h2>📈 Poids</h2><canvas id="chart"></canvas><p id="trend" class="muted"></p></div>
+<div class="card"><h2>🏋️ Performances</h2><p>Utilise la difficulté ressentie et tes commentaires pour décider des progressions.</p><div id="logs"></div></div>
+<div class="card"><h2>🤖 Mes recommandations</h2><div id="recommendations"></div></div>
+<div class="card"><h2>📈 Progression par exercice</h2><div id="exerciseProgress"></div></div>
+<div class="card"><h2>🍽️ Mes objectifs nutrition</h2>
+<p class="muted">Repères du programme : 2 000–2 100 kcal/jour · 145–160 g de protéines/jour.</p>
+<div class="grid">
+<div><label class="muted">Calories consommées</label><input id="kcals" type="number" placeholder="ex. 2050"></div>
+<div><label class="muted">Protéines (g)</label><input id="proteins" type="number" placeholder="ex. 150"></div>
+</div>
+<button class="full" onclick="saveNutrition()">Enregistrer</button>
+</div>
+<div class="card"><h2>🛒 Courses</h2><p class="muted">La génération détaillée des listes hebdomadaires sera intégrée à la prochaine étape.</p></div>
+<div class="card"><h2>💾 Sauvegarde</h2>
+<p class="muted">Exporte régulièrement tes données. Tu pourras les restaurer sur un autre appareil ou après une réinstallation.</p>
+<button onclick="exportBackup()">⬇️ Exporter mes données</button>
+<button class="secondary" onclick="document.getElementById('backupFile').click()">↥ Restaurer une sauvegarde</button>
+<input id="backupFile" type="file" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
+<p id="backupStatus" class="muted"></p>
+</div>
+<div class="card"><h2>📝 Notes personnelles</h2><p class="muted">Les données restent enregistrées localement dans ce prototype.</p></div></section>
+</main>
+<nav><button onclick="view('home')">Accueil</button><button onclick="view('day')">Journée</button><button onclick="view('progress')">Progression</button></nav>
+
+<script>
+const P = [["Skyr 250 g + avoine 50 g + banane", "Poulet 160 g + riz 200 g + légumes", "Fromage blanc 200 g + pomme + amandes 10 g", "Saumon 180 g + pommes de terre 250 g + haricots verts", "Haut du corps + gainage"], ["3 œufs + pain complet + orange", "Steak 5 % 160 g + pâtes 200 g + courgettes", "Skyr 200 g + banane", "Poulet 180 g + quinoa 200 g + ratatouille", "Jambes + fessiers"], ["Fromage blanc 250 g + avoine 50 g + fruits rouges", "Dinde 160 g + riz 200 g + brocoli", "Shake protéiné + pomme", "Colin d’Alaska 180 g + pommes de terre 250 g + légumes", "Haut du corps + gainage"], ["3 œufs + pain complet + kiwi", "Poulet 160 g + pâtes 200 g + tomates/courgettes", "Skyr 200 g + poire + noix 10 g", "Steak 5 % 180 g + pommes de terre 250 g + salade", "Jambes + fessiers"], ["Skyr 250 g + avoine 50 g + banane", "Saumon 180 g + riz 200 g + légumes", "Fromage blanc 200 g + fruit", "Dinde 180 g + semoule 200 g + ratatouille", "Full body"], ["3 œufs + pain complet + fruit", "Poulet 160 g + pommes de terre 250 g + salade", "Skyr + pomme + amandes 10 g", "Colin d’Alaska 180 g + riz 200 g + légumes", "Repos / récupération"], ["Fromage blanc 250 g + avoine + fruits rouges", "Steak 5 % 180 g + pâtes 200 g + légumes", "Skyr + banane", "Poulet 180 g + riz 200 g + légumes", "Repos / récupération"], ["Skyr + avoine + banane", "Poulet + riz + légumes", "Fromage blanc + pomme + amandes", "Saumon + pommes de terre + épinards", "Haut du corps + gainage"], ["Œufs + pain complet + fruit", "Dinde + semoule + légumes", "Skyr + banane", "Bœuf 5 % + riz + courgettes", "Jambes + fessiers"], ["Fromage blanc + avoine + fruits rouges", "Thon au naturel + pâtes + tomates", "Shake protéiné + fruit", "Poulet + pommes de terre + brocoli", "Haut du corps + gainage"], ["Omelette + pain complet + kiwi", "Steak 5 % + riz + légumes", "Skyr + poire + noix", "Colin d’Alaska + semoule + ratatouille", "Jambes + fessiers"], ["Skyr + avoine + banane", "Poulet + pâtes + légumes", "Fromage blanc + pomme", "Saumon + riz + légumes", "Full body"], ["Œufs + pain complet + orange", "Dinde + pommes de terre + salade", "Skyr + fruit + amandes", "Poulet + quinoa + légumes", "Repos / récupération"], ["Fromage blanc + avoine + fruit", "Steak 5 % + pâtes + légumes", "Skyr + banane", "Colin d’Alaska + riz + légumes", "Repos / récupération"], ["Skyr + avoine + banane", "Poulet + riz + légumes", "Fromage blanc + pomme", "Saumon + pommes de terre + haricots verts", "Haut du corps + gainage"], ["Œufs + pain complet + fruit", "Bœuf 5 % + pâtes + courgettes", "Skyr + banane + amandes", "Dinde + semoule + légumes", "Jambes + fessiers"], ["Fromage blanc + avoine + fruits rouges", "Poulet + quinoa + légumes", "Shake + pomme", "Colin d’Alaska + riz + brocoli", "Haut du corps + gainage"], ["Omelette + pain complet + fruit", "Dinde + pommes de terre + salade", "Skyr + poire", "Steak 5 % + riz + légumes", "Jambes + fessiers"], ["Skyr + avoine + banane", "Saumon + riz + légumes", "Fromage blanc + fruit + noix", "Poulet + pâtes + ratatouille", "Full body"], ["Œufs + pain complet + orange", "Poulet + pommes de terre + légumes", "Skyr + banane", "Colin d’Alaska + semoule + légumes", "Repos / récupération"], ["Fromage blanc + avoine + fruit", "Steak 5 % + riz + légumes", "Skyr + pomme + amandes", "Dinde + pommes de terre + salade", "Repos / récupération"], ["Skyr + avoine + banane", "Poulet + riz + légumes", "Fromage blanc + pomme", "Saumon + pommes de terre", "Haut du corps + gainage"], ["Œufs + pain complet + fruit", "Steak 5 % + pâtes + légumes", "Skyr + banane", "Dinde + riz + légumes", "Jambes + fessiers"], ["Fromage blanc + avoine + fruits rouges", "Poulet + quinoa + légumes", "Shake + pomme", "Colin d’Alaska + pommes de terre + haricots verts", "Haut du corps + gainage"], ["Omelette + pain complet + kiwi", "Dinde + semoule + légumes", "Skyr + poire + noix", "Steak 5 % + riz + salade", "Jambes + fessiers"], ["Skyr + avoine + banane", "Saumon + riz + légumes", "Fromage blanc + fruit", "Poulet + pommes de terre + légumes", "Full body"], ["Œufs + pain complet + orange", "Poulet + pâtes + légumes", "Skyr + pomme + amandes", "Colin d’Alaska + riz + légumes", "Repos / récupération"], ["Fromage blanc + avoine + fruit", "Steak 5 % + pommes de terre + légumes", "Skyr + banane", "Dinde + quinoa + ratatouille", "Repos / récupération"], ["Skyr 250 g + avoine 50 g + banane", "Poulet 160 g + riz 200 g + légumes", "Fromage blanc 200 g + pomme + amandes 10 g", "Saumon 180 g + pommes de terre 250 g + légumes", "Haut du corps + gainage"], ["3 œufs + pain complet + fruit", "Dinde 160 g + pâtes 200 g + légumes", "Skyr 200 g + banane", "Colin d’Alaska 180 g + riz 200 g + légumes", "Jambes + fessiers"]];
+const W = {"upper": ["Pompes 8–15", "Rowing 10–15", "Développé épaules 10–12", "Tirage élastique 10–15", "Gainage 30–40 s"], "legs": ["Squats 12–15", "Fentes 8–10 / jambe", "Pont fessier 15–20", "Mollets 15–20", "Gainage latéral 30 s / côté"], "full": ["Squat + développé épaules 10", "Rowing 10–15", "Pompes 8–15", "Fentes 8 / jambe", "Hip thrust 12–15", "Gainage 30–40 s"]};
+let cur=Number(localStorage.getItem('cur')||1);
+let data=JSON.parse(localStorage.getItem('data')||'{}');
+function type(d){let x=(d-1)%7;return [0,2,4].includes(x)?'upper':([1,3].includes(x)?'legs':'full')}
+function view(v){['home','dayview','progress'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(v==='day'?'dayview':v).classList.remove('hidden');if(v==='day')renderDay();if(v==='progress')renderProgress();document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));document.getElementById(v==='home'?'b1':v==='day'?'b2':'b3').classList.add('active')}
+function render(){document.getElementById('day').textContent=cur+' / 30';document.getElementById('weight').textContent=data[cur]?.weight?data[cur].weight+' kg':'—';document.getElementById('head').textContent='Jour '+cur+' · objectif progressif 87 kg';document.getElementById('done').textContent=Object.values(data).filter(x=>x&&x.workout).length}
+function renderDay(){let p=P[cur-1],d=data[cur]||{};document.getElementById('daypill').textContent='JOUR '+cur;document.getElementById('title').textContent='Ton programme du jour';document.getElementById('session').textContent=p[4]+' · 20 min';document.getElementById('meals').innerHTML=['🥣 Petit-déjeuner','🍛 Déjeuner','🍎 Collation','🍽️ Dîner'].map((n,i)=>'<div class="meal"><b>'+n+'</b>'+p[i]+'</div>').join('');let ex=W[type(cur)];document.getElementById('exercises').innerHTML=ex.map((e,i)=>{
+ let saved=(d.exercise||{})[i]||{};
+ return '<div class="ex"><div><b>'+e+'</b><div class="row" style="margin-top:7px"><input id="rep'+i+'" type="number" min="0" placeholder="reps" value="'+(saved.reps??'')+'" style="font-size:14px;padding:7px"><select id="r'+i+'" style="font-size:14px;padding:7px"><option value="">Élastique</option><option value="10">10 kg</option><option value="20">20 kg</option><option value="30">30 kg</option><option value="40">40 kg</option><option value="50">50 kg</option></select></div></div><input type="checkbox" id="e'+i+'" '+((d.checked||[]).includes(i)?'checked':'')+'></div>'
+}).join('');
+ex.forEach((_,i)=>{if(d.resistance&&d.resistance[i])document.getElementById('r'+i).value=d.resistance[i]});document.getElementById('difficulty').value=d.difficulty||'';document.getElementById('minutes').value=d.minutes||'';document.getElementById('comment').value=d.comment||'';document.getElementById('w').value=d.weight||'';document.getElementById('waist').value=d.waist||'';document.getElementById('dayKcal').value=d.kcal||'';document.getElementById('dayProt').value=d.protein||''}
+function finish(){let d=data[cur]||{};d.checked=[];d.resistance={};d.exercise={};W[type(cur)].forEach((_,i)=>{
+ if(document.getElementById('e'+i).checked)d.checked.push(i);
+ let r=document.getElementById('r'+i).value, reps=parseInt(document.getElementById('rep'+i).value);
+ if(r)d.resistance[i]=Number(r);
+ d.exercise[i]={reps:isNaN(reps)?null:reps,resistance:r?Number(r):null,done:document.getElementById('e'+i).checked};
+});d.workout=d.checked.length>0;d.difficulty=document.getElementById('difficulty').value;d.minutes=document.getElementById('minutes').value;d.comment=document.getElementById('comment').value;data[cur]=d;save();alert('Séance enregistrée ✓')}
+function saveMeasures(){let d=data[cur]||{};let w=parseFloat(document.getElementById('w').value),wa=parseFloat(document.getElementById('waist').value);if(!isNaN(w))d.weight=w;if(!isNaN(wa))d.waist=wa;data[cur]=d;save();alert('Mesures enregistrées ✓')}
+function save(){localStorage.setItem('data',JSON.stringify(data));localStorage.setItem('cur',cur);render()}
+function nextDay(){if(cur<30){cur++;save();renderDay();}else alert('Bravo : les 30 jours sont terminés !')}
+function saveDayNutrition(){let d=data[cur]||{};d.kcal=parseFloat(document.getElementById('dayKcal').value)||null;d.protein=parseFloat(document.getElementById('dayProt').value)||null;data[cur]=d;save();alert('Nutrition enregistrée ✓')}
+function saveNutrition(){let d=data[cur]||{};d.kcal=parseFloat(document.getElementById('kcals').value)||null;d.protein=parseFloat(document.getElementById('proteins').value)||null;data[cur]=d;save();alert('Nutrition enregistrée ✓')}
+function renderProgress(){
+ let entries=Object.keys(data).map(Number).filter(k=>data[k].weight).sort((a,b)=>a-b);
+ let c=document.getElementById('chart'),ctx=c.getContext('2d');c.width=c.clientWidth*2;c.height=c.clientHeight*2;ctx.clearRect(0,0,c.width,c.height);
+ if(entries.length<2){ctx.font='28px sans-serif';ctx.fillText('Ajoute 2 pesées pour voir la courbe',25,80)}
+ else{
+   let vals=entries.map(k=>data[k].weight),mn=Math.min(...vals)-.5,mx=Math.max(...vals)+.5;
+   ctx.beginPath();entries.forEach((k,i)=>{let x=30+i/(entries.length-1)*(c.width-60),y=c.height-30-(data[k].weight-mn)/(mx-mn)*(c.height-60);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+   document.getElementById('trend').textContent='Évolution depuis la première pesée : '+(vals[vals.length-1]-vals[0]).toFixed(1)+' kg';
+ }
+ let logs=Object.keys(data).map(Number).filter(k=>data[k].workout).sort((a,b)=>b-a);
+ document.getElementById('logs').innerHTML=logs.slice(0,10).map(k=>{let rr=data[k].resistance||{}, ee=data[k].exercise||{};let rs=Object.entries(rr).map(([i,v])=>W[type(k)][i]+': '+((ee[i]&&ee[i].reps)||'—')+' reps · '+v+' kg').join(' · ');return '<p><b>Jour '+k+'</b> · difficulté '+(data[k].difficulty||'—')+' · '+(data[k].minutes||'—')+' min<br><span class="muted">'+(rs||'Aucun élastique renseigné')+'</span><br><span class="muted">'+(data[k].comment||'Aucun commentaire')+'</span></p>'}).join('')||'<p class="muted">Aucune séance enregistrée.</p>';
+
+ let rec=[];
+ if(entries.length>=3){
+   let recent=entries.slice(-3).map(k=>data[k].weight), delta=recent[recent.length-1]-recent[0];
+   if(delta<-.3) rec.push('🟢 Le poids évolue dans le bon sens. Garde le rythme actuel.');
+   else if(Math.abs(delta)<=.3) rec.push('🟡 Le poids est plutôt stable sur les dernières mesures. Regarde aussi le tour de taille et la régularité avant de modifier l’alimentation.');
+   else rec.push('🟠 Le poids remonte légèrement. Vérifie la régularité des repas, le sommeil et les portions avant tout ajustement.');
+ }
+ let diffs=logs.slice(0,3).map(k=>parseInt(data[k].difficulty)).filter(Boolean);
+ if(diffs.length>=2 && diffs.every(x=>x<=2)) rec.push('💪 Tes dernières séances semblent faciles. La prochaine progression pourra être une petite hausse des répétitions ou le passage à l’élastique supérieur.');
+ let recentRes=[];
+ logs.slice(0,3).forEach(k=>{let r=data[k].resistance||{};Object.values(r).forEach(v=>recentRes.push(Number(v)))});
+ if(recentRes.length){let max=Math.max(...recentRes); if(max<50) rec.push('📈 Progression élastiques : si la technique reste propre et la difficulté ≤ 2/5, envisage le niveau supérieur disponible après stabilisation des répétitions.'); else rec.push('🏆 Tu utilises déjà le niveau 50 kg sur certains exercices : privilégie maintenant l’augmentation des répétitions ou un tempo plus lent plutôt qu’un élastique plus fort.');}
+ if(diffs.length>=2 && diffs.some(x=>x>=5)) rec.push('🔵 Certaines séances sont très difficiles. Mieux vaut stabiliser avant d’augmenter la charge.');
+ let prots=Object.keys(data).map(Number).filter(k=>data[k].protein).slice(-7).map(k=>data[k].protein);
+ if(prots.length>=3){let avg=prots.reduce((a,b)=>a+b,0)/prots.length;if(avg<145)rec.push('🍗 Tes apports protéiques moyens récents sont sous le repère de 145 g.');else if(avg<=160)rec.push('🥩 Tes protéines sont dans la cible du programme.');else rec.push('🥩 Tes protéines sont au-dessus de la cible ; inutile de chercher à augmenter davantage.');}
+ document.getElementById('recommendations').innerHTML=rec.length?rec.map(x=>'<p>'+x+'</p>').join(''):'<p class="muted">Continue à renseigner tes séances et mesures : les recommandations apparaîtront avec suffisamment de données.</p>';
+ renderExerciseProgress();
+}
+function renderExerciseProgress(){
+ let out=[];
+ Object.keys(W).forEach(typeName=>{
+   W[typeName].forEach((name,i)=>{
+     let rows=[];
+     Object.keys(data).map(Number).sort((a,b)=>a-b).forEach(k=>{
+       let t=type(k), ex=(data[k].exercise||{})[i];
+       if(t===typeName && ex && ex.done && ex.reps) rows.push({day:k,reps:Number(ex.reps),res:Number(ex.resistance)||0});
+     });
+     if(rows.length){
+       let last=rows[rows.length-1], prev=rows.length>1?rows[rows.length-2]:null;
+       let advice='';
+       if(prev && last.reps>=prev.reps && last.res>=prev.res && (parseInt(data[rows[rows.length-1].day].difficulty)||3)<=2){
+         if(last.res<50) advice='🟢 Prochaine fois : teste l’élastique '+({10:20,20:30,30:40,40:50}[last.res]||'supérieur')+' kg.';
+         else advice='🟢 50 kg atteint : augmente progressivement les répétitions ou ralentis le tempo.';
+       } else if(prev && last.reps<prev.reps) advice='🟡 Stabilise les répétitions avant d’augmenter la résistance.';
+       out.push('<div style="padding:10px 0;border-bottom:1px solid #eee"><b>'+name+'</b><br><span class="muted">Dernier : '+last.reps+' reps · '+(last.res||'sans')+' kg'+(prev?' · précédent : '+prev.reps+' reps · '+(prev.res||'sans')+' kg':'')+'</span><br>'+advice+'</div>');
+     }
+   });
+ });
+ document.getElementById('exerciseProgress').innerHTML=out.join('')||'<p class="muted">Renseigne quelques séances pour voir la progression exercice par exercice.</p>';
+}
+
+function exportBackup(){
+ const payload={
+   app:"Mon Programme 30 jours",
+   version:5,
+   exportedAt:new Date().toISOString(),
+   currentDay:cur,
+   data:data
+ };
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='mon-programme-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ document.getElementById('backupStatus').textContent='Sauvegarde exportée ✓';
+}
+function importBackup(event){
+ const file=event.target.files[0]; if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+   try{
+     const p=JSON.parse(reader.result);
+     if(!p || p.app!=="Mon Programme 30 jours" || typeof p.data!=="object") throw new Error();
+     if(!confirm('Restaurer cette sauvegarde remplacera les données actuellement présentes sur cet appareil. Continuer ?')) return;
+     data=p.data;cur=Math.min(30,Math.max(1,Number(p.currentDay)||1));save();renderDay();renderProgress();
+     document.getElementById('backupStatus').textContent='Sauvegarde restaurée ✓';
+     alert('Données restaurées avec succès.');
+   }catch(e){alert('Fichier de sauvegarde invalide.');}
+ };
+ reader.readAsText(file);
+}
+
+render();renderDay();view('home');
+</script></body></html>
