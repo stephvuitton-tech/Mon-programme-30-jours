@@ -658,7 +658,17 @@ ${recipe(meal)}
 </div>
 
 `).join("");
+function toggleRecipe(i){
 
+  const recipe = document.getElementById("recipe" + i);
+
+  if (!recipe) return;
+
+  recipe.style.display =
+
+    recipe.style.display === "block" ? "none" : "block";
+
+}
 
 /* séance */
 
