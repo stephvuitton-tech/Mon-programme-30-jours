@@ -143,7 +143,23 @@ Appuie sur « Voir la recette » pour afficher la préparation.
 <p class="muted" id="workoutInfo"></p>
 
 <div id="exercises"></div>
+<div id="restTimer" class="card" style="margin-top:12px">
 
+  <h3>⏱️ Compteur de repos</h3>
+
+  <div id="restTimerDisplay">00:45</div>
+
+  <p>Durée du repos : <span id="restDurationLabel">45</span> secondes</p>
+
+  <button onclick="changeRestDuration(-5)">− 5 s</button>
+
+  <button onclick="changeRestDuration(5)">+ 5 s</button>
+
+  <button onclick="startRestTimer()">Démarrer</button>
+
+  <button onclick="resetRestTimer()">Réinitialiser</button>
+
+</div>
 <div class="row" style="margin-top:12px">
 <select id="difficulty">
 <option value="">Difficulté</option>
@@ -1228,7 +1244,105 @@ out.join("")
 render();
 
 renderDay();
+/* =========================
 
+   COMPTEUR DE REPOS
+
+   ========================= */
+
+let restDuration = 45;
+
+let restRemaining = 45;
+
+let restInterval = null;
+
+function updateRestTimer() {
+
+  const display = document.getElementById("restTimerDisplay");
+
+  const label = document.getElementById("restDurationLabel");
+
+  if (!display || !label) return;
+
+  const minutes = Math.floor(restRemaining / 60);
+
+  const seconds = restRemaining % 60;
+
+  display.textContent =
+
+    String(minutes).padStart(2, "0") + ":" +
+
+    String(seconds).padStart(2, "0");
+
+  label.textContent = restDuration;
+
+}
+
+function changeRestDuration(change) {
+
+  restDuration = Math.max(5, Math.min(600, restDuration + change));
+
+  restRemaining = restDuration;
+
+  if (restInterval !== null) {
+
+    clearInterval(restInterval);
+
+    restInterval = null;
+
+  }
+
+  updateRestTimer();
+
+}
+
+function startRestTimer() {
+
+  if (restInterval !== null) return;
+
+  if (restRemaining <= 0) {
+
+    restRemaining = restDuration;
+
+  }
+
+  updateRestTimer();
+
+  restInterval = setInterval(function () {
+
+    restRemaining--;
+
+    updateRestTimer();
+
+    if (restRemaining <= 0) {
+
+      clearInterval(restInterval);
+
+      restInterval = null;
+
+    }
+
+  }, 1000);
+
+}
+
+function resetRestTimer() {
+
+  if (restInterval !== null) {
+
+    clearInterval(restInterval);
+
+    restInterval = null;
+
+  }
+
+  restRemaining = restDuration;
+
+  updateRestTimer();
+
+}
+
+updateRestTimer();
 view("home");
 
 </script>
